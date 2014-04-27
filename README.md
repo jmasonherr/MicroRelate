@@ -1,7 +1,7 @@
-MicroRelate
-===========
+MicroRelate.js
+==============
 
-A backbone.js plugin that gives models relationships to each other. Designed for seamless integration to a JSON REST API.  Prevent duplicates, and fetch and find models easier. and Inspired by backbone-relational and jjrelational.
+An automagic backbone.js plugin that relates Models to each other. Designed for seamless integration to a JSON REST API.  Prevent duplicates, and fetch and find models easier. and Inspired by backbone-relational and jjrelational.
 
 ##Example
 
@@ -20,27 +20,26 @@ City = Backbone.RelationModel.extend({
 });
 
 Company = Backbone.RelationModel.extend({
-    // Should be the model name
-    nameString: 'Company',
+    nameString: 'Company', // Should be the model name
     idAttribute: 'id',
     urlRoot: '/api/company/',
     relations: [
-
-        { // One to one
+        // One to one
+        {
             type: 'one_one',
             key: 'manager',
             relatedModel: 'User',
             reverseKey: 'company',
         },
-
-        { // Foreign key
+        // Foreign key
+        {
             type: 'has_one',
             key: 'city',
             relatedModel: 'City',
             reverseKey: 'companies',
         },
-
-        { // Many to many
+        // Many to many
+        {
             type: 'many_many',
             key: 'employees',
             relatedModel: 'User',
@@ -48,13 +47,12 @@ Company = Backbone.RelationModel.extend({
         },
     ],
 });
-
 ```
 nameString should be the same as the model name.
 
-Relations should be a list of objects with a 'type' (string) , 'key' (string), 'relatedModel' (string), and 'reverseKey' (string)
-
 The key and reverseKey are how you will traverse the relationships
+
+Relations should be a list of objects with a 'type' (string) , 'key' (string), 'relatedModel' (string), and 'reverseKey' (string)
 
 There are three options for type, 'one_one', 'has_one', and 'many_many'
 
@@ -102,12 +100,23 @@ Let's make fictional companies and relationships
 true
 
 // The reverse is automagically set up
-> alice.get('company') // returns RelationModel 'telemericorp'
+> alice.get('company') == telemericorp // returns RelationModel 'telemericorp'
+true
+```
 
+### Models are stored centrally
+
+```
+// Look at the entire User collection in memory
+> User.all() // returns UserCol with all User models present
+> User.all().get(2) // returns ders RelatedModel
+
+// Same as .find
+> User.find(2) // returns ders RelatedModel
 ```
 
 
-### Duplicates are prevented
+### Duplicates are watched for
 
 You can instantiate a relationship with an ID, object or list, and it will be converted to the correct model.  If the model already exists, that one will be used
 
@@ -117,12 +126,12 @@ You can instantiate a relationship with an ID, object or list, and it will be co
 > newalice == alice
 true
 
-
+// Set with an integer like an API might
 > telemericorp.set('manager', 4);
 > telemericorp.get('manager') == alice;
 true
 
-
+// Set with an object
 > telemericorp.set('manager', {id: 4});
 > telemericorp.get('manager') == alice;
 true
@@ -132,16 +141,17 @@ true
 > telemericorp.get('employees') // returns Empty UserCol .  Collections are automagically made with the name of the nameString
 
 
+// You can set with a list of IDs
 > telemericorp.set('employees', [2,3]);
 > telemericorp.toJSON()
 [{id: 2, name: 'Ders'}, {id: 3, name: 'Blake'}]
 
-
+// Or a list of objects
 > telemericorp.set('employees', [{id: 2}, {id: 3}]);
 > telemericorp.toJSON()
 [{id: 2, name: 'Ders'}, {id: 3, name: 'Blake'}]
 
-
+// Why not just a list of the RelatedModels themselves
 > telemericorp.set('employees', [ders, blake]);
 > telemericorp.toJSON()
 [{id: 2, name: 'Ders'}, {id: 3, name: 'Blake'}]
@@ -156,20 +166,6 @@ true
 
 // And you can see the reverse
 > adam.get('jobs') // returns CompanyCol collection with only telemericorp
-
-```
-
-### Models are stored centrally
-
-```
-
-// Look at the entire User collection in memory
-> User.all() // returns UserCol with all User models present
-> User.all().get(2) // returns ders RelatedModel
-
-// Same as .find
-> User.find(2) // returns ders RelatedModel
-
 ```
 
 
@@ -178,17 +174,16 @@ true
 toJSON will return the IDs of the related models.
 
 ```
-
 // Serialization returns the IDs of the models
 > telemericorp.toJSON() 
 {id: 1, manager: 4, city: 'RanchoCucamonga', employees: [1, 2, 3]}
-
 ```
+
+
 ### URLs automatically nested
 
 
 ```
-
 // Nested urls are set up automatically
 > ders.get('jobs').url
 '/api/user/2/jobs/'
@@ -197,7 +192,6 @@ toJSON will return the IDs of the related models.
 > ders.fetchRelated('jobs'); // return XHR request
 > ders.fetchRelated('jobs'); // cached, returns empty list
 []
-
 ```
 
 ##Philosophy

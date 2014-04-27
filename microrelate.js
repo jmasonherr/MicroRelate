@@ -1,4 +1,5 @@
 // TODO: ADD IN MANY TO MANY RELATINOSHIP GETTING IN REVERSE
+// CONSOLIDATE has_one one_one comparisons
 // DEAL WITH DEFAULT_COLL
 
 Backbone.store = {
@@ -97,12 +98,6 @@ Backbone.store = {
     },
 
 };
-
-/*
-
-CHANGED WAY THAT RELATIONS ARE GOTTEN< WHAT THEY LOOK LIKE< AND ADDED IN 'one_one'.   NEED TO CONSOLIDATE has_one one_one comparisons
-*/
-
 
 
 
@@ -390,8 +385,6 @@ _coerceSingle = function(obj, val) {
         val = _handleID(val);
         if(obj.find(val)){return obj.find(val)};
         data[obj.prototype.idAttribute] = val;
-//        console.log('newdata');
-//        console.log(data);
         return new obj(data)
     }
     return null;
@@ -412,12 +405,5 @@ getObj = function(s){
     });
     return o;
 }
-//////
-
-
-
-
-
-
 
 
