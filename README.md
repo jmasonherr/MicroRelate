@@ -1,7 +1,7 @@
 MicroRelate.js
 ==============
 
-An automagic backbone.js plugin that relates Models to each other. Designed for seamless integration to a JSON REST API.  Prevent duplicates, and fetch and find models easier. and Inspired by backbone-relational and jjrelational.
+An automagic backbone.js plugin that relates Models to each other. Designed for seamless integration to a JSON REST API.  Prevent duplicates, and fetch and find models easier. Inspired by backbone-relational and jjrelational.
 
 ##Example
 
