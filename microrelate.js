@@ -105,16 +105,13 @@ Backbone.store = {
         // Any properties that may have beeen created
         
         // Decide whether to cache collection or object
-        var minimalModels
-        ,   fetched = false;
-        if(Backbone.store.urlCache[cacheUrl] && Backbone.store.urlCache[cacheUrl].fetched) {
-            fetched = true;
-        }
+        var minimalModels;
+
         if(o instanceof Backbone.Collection) {
             var idAttribute;
             minimalModels = [];
 
-            if (!o.models.length){
+            if (o.models.length){
                 _.each(o.models, function(x) {
                     if(!idAttribute){ idAttribute = x.idAttribute;}
                     var mm = {};
@@ -128,10 +125,7 @@ Backbone.store = {
         }
         
         // If its been fetched once, it will stay true
-        Backbone.store.urlCache[cacheUrl] = {
-            data: minimalModels,
-            fetched: fetched
-        };
+        Backbone.store.urlCache[cacheUrl] = minimalModels;
     },
 
     _getRelation: function(obj, relation) {
@@ -155,7 +149,17 @@ Backbone.store = {
 CHANGED WAY THAT RELATIONS ARE GOTTEN< WHAT THEY LOOK LIKE< AND ADDED IN 'one_one'.   NEED TO CONSOLIDATE has_one one_one comparisons
 */
 
+Backbone.Collection = Backbone.Collection.extend({
+    fetch: function(options) {
+        var self = this
+        ,   xhrObj = Backbone.Model.prototype.fetch.call(this, options);
+        $.when(xhrObj).done(function() {
+            Backbone.store.cacheObj(self, _.isFunction(self.url) ? self.url() : self.url);
+        });
+        return xhrObj;
+    },
 
+});
 
 
 Backbone.RelationModel = Backbone.Model.extend({
@@ -222,6 +226,7 @@ Backbone.RelationModel = Backbone.Model.extend({
         if(!Backbone.store.relations[this.storeIdentifier]){throw 'Object not in store';}
         
         // Dont create twice
+        // create if it isnt in the store or if it takes filters?
         if(!Backbone.store.relations[this.storeIdentifier][key]) {
             // Add relation
             Backbone.store.relations[this.storeIdentifier][key] = {
@@ -237,6 +242,16 @@ Backbone.RelationModel = Backbone.Model.extend({
 
         return this.get(key);
     },
+    
+    fetch: function(options) {
+        var self = this
+        ,   xhrObj = Backbone.Model.prototype.fetch.call(this, options)
+        ,   url = _.isFunction(self.url) ? self.url() : self.url;
+        $.when(xhrObj).done(function() {
+            Backbone.store.cacheObj(self, url);
+        });
+        return xhrObj;
+    },
 
     fetchRelated: function(attr, options, filters){
         /* Fetch models across a relationship */
@@ -251,17 +266,16 @@ Backbone.RelationModel = Backbone.Model.extend({
         _.extend(options, {reset: true});
         
         var relation = this._getRelation(attr)
-        ,   o = this.get(attr)
-        ,   inCache = false;
+        ,   o = this.get(attr);
 
         
         // If relation hasn't been seen/set yet, then we need to create that object.
         if(!o) {
             o = setType(this, relation, isSingle(relation) ? {} : []);
+            this.set(attr, o);
         }
          
         var existingUrl = _.isFunction(o.url) ? o.url() : o.url;
-
 
         // Make sure its a relation
         if(!relation){
@@ -281,31 +295,26 @@ Backbone.RelationModel = Backbone.Model.extend({
             newUrl = o.urlRoot + o.id + '/';
         }
 
-        // Cache the current object
-        Backbone.store.cacheObj(o, newUrl);
-
-
         // If its an object and is already reasonably populated, set as fetched
         if('attributes' in o && o.attributes.length > 3) {
-            Backbone.store.urlCache[newUrl].fetched = true;
+            Backbone.store.cacheObj(o, newUrl);
+            return [];
         }
 
        // Sets new url on object so caching can happen in fetch if necessary
         o.url = newUrl;
 
         // Set cached version and return []
-        if(Backbone.store.urlCache[o.url].fetched === true) {
-            if(newUrl != existingUrl) { 
-                o = setType(this, relation, Backbone.store.urlCache[o.url].data);
-                o.url = newUrl;
-            } 
+        if(Backbone.store.urlCache[newUrl]) {
+            if(newUrl != existingUrl) {
+                if(o instanceof Backbone.Model) {
+                    this.set(attr, setType(this, relation, Backbone.store.urlCache[newUrl]));
+                } else {
+                    this.get(attr).reset(Backbone.store.urlCache[newUrl]);
+                }
+            }
             return [];
         }
-
-
-
-        // Set it as fetched cuz its gettin called
-        Backbone.store.urlCache[o.url].fetched = true;
         
         // Call fetch like any other.  This sets fetched as true
         return o.fetch(options);
@@ -476,14 +485,14 @@ setType = function(obj, relation, val) {
         result.url = _makeUrl(result, obj, relation);
         return result;
     }
-}
+};
 
 _handleID = function(i) {
     if(_.isNumber(i)){
         return parseInt(i);
     }
     return i;
-}
+};
 
 _coerceSingle = function(obj, val) {
     var data = {};
@@ -501,7 +510,7 @@ _coerceSingle = function(obj, val) {
         return new obj(data)
     }
     return null;
-}
+};
 
 getParent = function(s) {
     var s = s.split('.');
@@ -509,7 +518,7 @@ getParent = function(s) {
         return getObj(s.splice(0, s.length - 1).join('.'));
     }
     return window
-}
+};
 
 getObj = function(s){
     var o = window;
@@ -517,4 +526,4 @@ getObj = function(s){
         o = o[x];
     });
     return o;
-}
+};
