@@ -1,4 +1,3 @@
-// TODO: ADD IN MANY TO MANY RELATINOSHIP GETTING IN REVERSE
 
 
 Backbone.store = {
@@ -199,18 +198,44 @@ Backbone.RelationModel = Backbone.Model.extend({
         // All heavy lifting will happen on 'set'
         var relatedModel, newCol
             , lookup = {}
+            , c
             , originalResult = Backbone.Model.prototype.get.call( this, attr )
             , relation = this._getRelation(attr);
+            
 
         if(relation){
             if(relation.reverse) {
                 relatedModel = getObj(relation.relatedModel);
-                lookup[relation.reverseKey] = this;
-                newCol = Backbone.store.where(relatedModel.prototype, lookup);
+                // M2M Relations have to look in collections
+                if(relation.type == 'many_many') {
+                    c = getObj(relatedModel.prototype.storeIdentifier + 'Col');
+                    newCol = new c([]);
+                    $.each(relatedModel.all().models, function(i,x) {
+                        if(x && x.get(relation.reverseKey) && (x.get(relation.reverseKey).get(self.id) || x.get(relation.reverseKey).get(self.id.toString()))) {
+                            newCol.add(x);
+                        }
+                    });
+                // FK relations can just use a 'where' statement
+                } else {
+                    lookup[relation.reverseKey] = this;
+                    newCol = Backbone.store.where(relatedModel.prototype, lookup);
+                }
                 newCol.url = _makeUrl(newCol, this, relation);
                 return newCol;
+            } else {
+                // make sure right url being set for many to manys
+                if (originalResult){
+                    var origResUrl = _.isFunction(originalResult.url) ? originalResult.url() : originalResult.url;
+                    // only reset the url if the relation is not already included 
+                    if (origResUrl.indexOf(relation.key) < 0){
+                        originalResult.url = _makeUrl(originalResult, this, relation);
+                    }
+                }
+
             }
+
         }
+
         return originalResult;
     },
 
@@ -388,7 +413,7 @@ Backbone.RelationModel = Backbone.Model.extend({
                 if(relation) {
                     if(!relation.reverse) {
                         // if it is a relation, set it to a collection
-                        data[k] = setType(self, relation, v)
+                        data[k] = setType(self, relation, v);
 
                         if(data[k] instanceof Backbone.Collection) {
                             data[k].url = _makeUrl(data[k], self, relation);
@@ -422,9 +447,9 @@ _.extend(Backbone.RelationModel, {
 
 _makeUrl = function(coll, obj, relation) {
     if(obj.id){
-        return (_.isFunction(obj.url) ? obj.url() : obj.url ) + relation.key + '/' + serializeParams(coll._filters);
+        return obj.urlRoot + obj.id + '/' + relation.key + '/' + serializeParams(coll._filters);
     }
-    return (_.isFunction(obj.url) ? obj.url() : obj.url ) + serializeParams(coll._filters);
+    return obj.urlRoot + serializeParams(coll._filters);
 };
 
 serializeParams = function(filters) {
