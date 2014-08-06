@@ -6,6 +6,7 @@ Backbone.store = {
     },
 
     urlCache: {},
+    xhrCache: {},
 
     registerModels: function(models) {
         /* Add all relations.  Could make collections too, so those don't hve to be declared
@@ -151,11 +152,18 @@ CHANGED WAY THAT RELATIONS ARE GOTTEN< WHAT THEY LOOK LIKE< AND ADDED IN 'one_on
 Backbone.Collection = Backbone.Collection.extend({
     fetch: function(options) {
         var self = this
-        ,   xhrObj = Backbone.Model.prototype.fetch.call(this, options);
+        ,   url = _.isFunction(self.url) ? self.url() : self.url
+        ,   xhrObj;
+        if(Backbone.store.xhrCache[url]) {
+            return Backbone.store.xhrCache[url];
+        }
+        xhrObj = Backbone.Model.prototype.fetch.call(this, options);
         $.when(xhrObj).done(function() {
-            Backbone.store.cacheObj(self, _.isFunction(self.url) ? self.url() : self.url);
+            Backbone.store.cacheObj(self, url);
+            delete Backbone.store.xhrCache[url];
         });
         return xhrObj;
+        
     },
 
 });
@@ -270,10 +278,15 @@ Backbone.RelationModel = Backbone.Model.extend({
     
     fetch: function(options) {
         var self = this
-        ,   xhrObj = Backbone.Model.prototype.fetch.call(this, options)
+        ,   xhrObj// = Backbone.Model.prototype.fetch.call(this, options)
         ,   url = _.isFunction(self.url) ? self.url() : self.url;
+        if(Backbone.store.xhrCache[url]) {
+            return Backbone.store.xhrCache[url];
+        }
+        xhrObj = Backbone.Model.prototype.fetch.call(this, options);
         $.when(xhrObj).done(function() {
             Backbone.store.cacheObj(self, url);
+            delete Backbone.store.xhrCache[url];
         });
         return xhrObj;
     },
