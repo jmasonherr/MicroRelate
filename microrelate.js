@@ -1,5 +1,6 @@
 
 
+
 Backbone.store = {
     collections: {
         // 'SGUser': SGUserCol containing all objects
@@ -204,7 +205,9 @@ Backbone.RelationModel = Backbone.Model.extend({
     get: function(attr){
         // Check the relationships, return a relationship if exists
         // All heavy lifting will happen on 'set'
-        var relatedModel, newCol
+        var relatedModel
+            , self = this
+            , newCol
             , lookup = {}
             , c
             , originalResult = Backbone.Model.prototype.get.call( this, attr )
