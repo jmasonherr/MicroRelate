@@ -199,7 +199,7 @@ Backbone.RelationModel = Backbone.Model.extend({
         return Backbone.store._getRelation(this, key);
     },
 
-    get: function(attr){
+    get: function(attr, filters){
         // Check the relationships, return a relationship if exists
         // All heavy lifting will happen on 'set'
 
@@ -217,9 +217,25 @@ Backbone.RelationModel = Backbone.Model.extend({
             if(relation.reverse) {
                 relatedModel = getObj(relation.relatedModel);
                 // M2M Relations have to look in collections
+                // Cehck to see if they're trying to filter these collections and sort and the like
+                if(filters && _.isObject(filters)) {
+                    c = getObj(relatedModel.prototype.storeIdentifier + 'Col');
+                    newCol = new c([]);
+                    newCol._filters = filters;
+                    newUrl = _makeUrl(newCol, this, relation);
+                    if(Backbone.store.urlCache[newUrl]) {
+                        newCol.reset(Backbone.store.urlCache[newUrl]);
+                        return newCol;
+                    }
+                    return undefined;
+                    
+                }
+                
                 if(relation.type == 'many_many') {
                     c = getObj(relatedModel.prototype.storeIdentifier + 'Col');
                     newCol = new c([]);
+                
+                
                     $.each(relatedModel.all().models, function(i,x) {
                         if(x && x.get(relation.reverseKey) && (x.get(relation.reverseKey).get(self.id) || x.get(relation.reverseKey).get(self.id.toString()))) {
                             newCol.add(x);
@@ -272,6 +288,7 @@ Backbone.RelationModel = Backbone.Model.extend({
                 type: single ? 'has_one' : 'has_many',
             };
             // Set the relationship with an empty collection
+            // LEFT OFF MAKING THIS ACCOUNT FOR SINGLES
             this.set(key, new new getObj(model + 'Col'))
         }
 
