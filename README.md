@@ -192,6 +192,29 @@ toJSON will return the IDs of the related models.
 > ders.fetchRelated('jobs'); // return XHR request
 > ders.fetchRelated('jobs'); // cached, returns empty list
 []
+
+// You can add filters after the fetch options
+> ders.fetchRelated('jobs', null, {sort: 'id'})
+// /api/user/2/jobs/?sort=id
+```
+
+### Bonus features!
+
+Get with filters (and they're automatically cached ).  You can add filters to fetchRelated, and retrieve only the models returned by that AJAX call
+
+```
+> adam.fetchRelated('jobs', null, {id: 1}) // Returns a collection of 1 job
+> adam.get('jobs', {id: 1}) // Returns only the one
+// /api/user/2/jobs/?id=1
+```
+
+
+Add ad-hoc relations for your custom endpoints (/api/people/5/previous_companies/)
+
+```
+// Returns a collection of 1 job from /api/user/2/previous_companies/
+> adam.addRelation('previous_companies', Company) 
+> adam.get('previous_companies') // Returns a collection of companies
 ```
 
 ##Philosophy
